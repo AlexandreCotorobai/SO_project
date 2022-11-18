@@ -1,0 +1,52 @@
+# if the first character is a dash, then it is a flag
+        # get the second character of the argument
+        secondchar=${arg:1:1}
+        echo $secondchar
+        if $secondchar -eq "p"
+        then
+            # if the second character is a p, then it is the -p flag
+            # get the third character of the argument
+            thirdchar=${arg:2:1}
+            echo $thirdchar
+            if $thirdchar -eq " "
+            then
+                # if the third character is a space, then it is the -p flag with a space
+                # get the pid
+                pid=${arg:3}
+                echo $pid
+                # call the function with the pid and 1 second
+                get_pid_stats $pid 1
+            else
+                # if the third character is not a space, then it is the -p flag without a space
+                # get the pid
+                pid=${arg:2}
+                echo $pid
+                # call the function with the pid and 1 second
+                get_pid_stats $pid 1
+            fi
+        elif $secondchar -eq "s"
+        then
+            # if the second character is an s, then it is the -s flag
+            # get the third character of the argument
+            thirdchar=${arg:2:1}
+            echo $thirdchar
+            if $thirdchar -eq " "
+            then
+                # if the third character is a space, then it is the -s flag with a space
+                # get the sleeptime
+                sleeptime=${arg:3}
+                echo $sleeptime
+                # call the function with the pid and sleeptime
+                get_pid_stats $pid $sleeptime
+            else
+                # if the third character is not a space, then it is the -s flag without a space
+                # get the sleeptime
+                sleeptime=${arg:2}
+                echo $sleeptime
+                # call the function with the pid and sleeptime
+                get_pid_stats $pid $sleeptime
+            fi
+        else
+            # if the second character is not a p or s, then it is an invalid flag
+            echo "Invalid flag"
+        fi
