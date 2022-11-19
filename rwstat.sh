@@ -10,6 +10,8 @@ declare reverse=0
 declare sortw=0
 declare comm=.*
 
+declare c=""
+
 # This is a function that will write to the terminal the readbytes and writebytes of a process
 
 function get_pid_stats() {
@@ -39,7 +41,7 @@ function get_pid_stats() {
 
     #create a variable for the /proc/[pid]/comm file
     comm=$(cat /proc/$pid/comm)
-    echo $c "<->" $comm
+    # echo $c "<->" $comm
 
     #create a variable for the creation date and time without the seconds and year of the process
     local creationdate=$(date -d "$(ps -p $pid -o lstart | tail -1 | awk '{print $1, $2, $3, $4}')" +"%b %d %H:%M")
@@ -53,7 +55,7 @@ function get_pid_stats() {
 }
 
 print(){
-    if [[ "$comm" = *"$c"* ]]; then
+    if [[ ($comm =~ $c) ]]; then
         printf "\n %-15s %-10s %+6s %+10s %+10s %+10s %+10s %+15s \n" "$comm" "$user" "$pid" "$readbytes" "$writebytes" "$readbps" "$writebps" "$creationdate"
     fi
 }
