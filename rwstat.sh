@@ -6,6 +6,7 @@ function get_pid_stats() {
     local pid=$1
 
     local sleeptime=$2
+    # echo "sleeptime:" $sleeptime
 
     # get the readbytes and writebytes of the process
     local readbytes=$(grep -E 'read_bytes' /proc/$pid/io | awk '{print $2}')
@@ -40,64 +41,66 @@ function get_pid_stats() {
 
 }
 
-## create a for loop to iterate throught the arguments
-index=1
 
-for arg in "$@"; do
-    # get the first character of the argument
-    firstchar=${arg:0:1}
-    # echo "first char:" $firstchar
-    # echo "arg len:" ${#arg}
-    if [ $firstchar == "-" ] &&  [ ${#arg} -eq 2 ] ; then
+declare c_uses=0
 
-        nextarg=$(($index+1))
+while getopts ":c:e:u:m:M:prw " opt; do
+    case $opt in
+        c)
+            c ="$OPTARG"
+            if [[ $flagC == 1 ]]; then
+                echo "ERROR: -c flag already used"
+                exit 1
+            fi
 
-        case ${arg:1:2} in
-            c)
-                echo "Next arg:" ${!nextarg}
-                ;;
+            c_uses=1
+            ;;
 
-            # e)
-
-            # u)
-
-            # m)
-
-            # M)
-
-            # p)
-
-            # r)
-
-            # w)
-
-            *)
-                echo "Invalid flag"
-                ;;
-        esac
-
-    fi
+        e)
+            e="$OPTARG"
 
 
-    index=$((index+1))
-    echo "index" $index
+
+
+            ;;
+        # u)
+
+        # m)
+
+        # M)
+
+        p)
+            p="$OPTARG"
+            echo ${p}
+            if [[ "$p" =~ ^[0-9]+$ ]]; then
+                echo "ERROR: -p flag must be followed by a number"
+                exit 1
+            fi
+
+            if [[ $p_uses == 1 ]]; then
+                echo "ERROR: -p flag already used"
+                exit 1
+            fi
+            ;;
+        # r)
+
+        # w)
+        \?)
+            echo "Invalid option: -$OPTARG" >&2
+            ;;
+        :)
+            echo "Option -$OPTARG requires an argument." >&2
+            exit 1
+            ;;
+    esac
 done
-
-
-
-
-
-
-
-
-
 
 
 printf "\n %-20s %-10s %+6s %+10s %+10s %+10s %+10s %+15s \n" "COMM" "USER" "PID" "READB" "WRITEB" "RATER" "RATEW" "DATE"
 ps -u $USER -o pid= | while read pid; do
 # if the user has permission to read the /proc/[pid]/io file
     if [ -r /proc/$pid/io ]; then
-        get_pid_stats $pid $1
+        get_pid_stats $pid "${@: -1}"
     fi
 done
 
