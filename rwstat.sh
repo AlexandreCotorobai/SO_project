@@ -43,20 +43,38 @@ function get_pid_stats() {
 
 
 declare c_uses=0
+declare e_uses=0
+declare u_uses=0
+declare m_uses=0
+declare M_uses=0
 declare p_uses=0
+declare reverse=0
+declare sortw=0
 
-while getopts ":c:e:u:m:M:p:rw " opt; do
+
+while getopts "c:s:e:u:m:M:p:rw" opt; do
     case $opt in
         c)
             c ="$OPTARG"
-            if [[ $flagC == 1 ]]; then
+
+            # check if flag is used more than once
+            if [[ $c_uses == 1 ]]; then
                 echo "ERROR: -c flag already used"
                 exit 1
             fi
 
             c_uses=1
             ;;
+        s)
+            s="$OPTARG"
+            # check if flag is used more than once
+            if [[ $s_uses == 1 ]]; then
+                echo "ERROR: -s flag already used"
+                exit 1
+            fi
 
+            s_uses=1
+            ;;
         e)
             e="$OPTARG"
 
@@ -67,13 +85,14 @@ while getopts ":c:e:u:m:M:p:rw " opt; do
 
         # M)
 
-        p)  
+        p)
             p=$OPTARG
+
             if [[ ! "${p}" =~ ^[0-9] ]]; then
                 echo "ERROR: -p flag must be followed by a number"
                 exit 1
             fi
-
+            # check if flag is used more than onc
             if [[ $p_uses == 1 ]]; then
                 echo "ERROR: -p flag already used"
                 exit 1
@@ -81,9 +100,26 @@ while getopts ":c:e:u:m:M:p:rw " opt; do
 
             p_uses=1
             ;;
-        # r)
+        r)
+            # check if flag is used more than once
+            if [[ $reverse =~ 0 ]]; then
+                echo "ERROR: -r flag already used"
+                exit 1
+            else 
+                reverse=1
+            fi
 
-        # w)
+            ;;
+        w)
+            # check if flag is used more than once
+            if [[ $sortw =~ 0 ]]; then
+                echo "ERROR: -w flag already used"
+                exit 1
+            else 
+                sortw=1
+            fi
+
+            ;;
         \?)
             echo "Invalid option: -$OPTARG" >&2
             ;;
