@@ -43,8 +43,9 @@ function get_pid_stats() {
 
 
 declare c_uses=0
+declare p_uses=0
 
-while getopts ":c:e:u:m:M:prw " opt; do
+while getopts ":c:e:u:m:M:p:rw " opt; do
     case $opt in
         c)
             c ="$OPTARG"
@@ -59,9 +60,6 @@ while getopts ":c:e:u:m:M:prw " opt; do
         e)
             e="$OPTARG"
 
-
-
-
             ;;
         # u)
 
@@ -69,10 +67,9 @@ while getopts ":c:e:u:m:M:prw " opt; do
 
         # M)
 
-        p)
-            p="$OPTARG"
-            echo ${p}
-            if [[ "$p" =~ ^[0-9]+$ ]]; then
+        p)  
+            p=$OPTARG
+            if [[ ! "${p}" =~ ^[0-9] ]]; then
                 echo "ERROR: -p flag must be followed by a number"
                 exit 1
             fi
@@ -81,6 +78,8 @@ while getopts ":c:e:u:m:M:prw " opt; do
                 echo "ERROR: -p flag already used"
                 exit 1
             fi
+
+            p_uses=1
             ;;
         # r)
 
