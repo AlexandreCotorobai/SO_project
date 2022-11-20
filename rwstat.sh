@@ -1,16 +1,20 @@
 #!/bin/bash
 
-declare c_uses=0
-declare e_uses=0
-declare u_uses=0
-declare m_uses=0
-declare M_uses=0
-declare p_uses=0
+declare c_used=0
+declare e_used=0
+declare u_used=0
+declare m_used=0
+declare M_used=0
+declare p_used=0
 declare reverse=0
 declare sortw=0
-declare comm=.*
 
-declare c=""
+# default values
+declare c="*"
+# s=$(ps -p 1 -o lstart= | awk '{print $2 " " $3 " " substr($4,1,length($4)-3)}')
+s=0
+e=$(date +"%b %d %H:%M")
+
 
 # This is a function that will write to the terminal the readbytes and writebytes of a process
 
@@ -44,7 +48,9 @@ function get_pid_stats() {
     # echo $c "<->" $comm
 
     #create a variable for the creation date and time without the seconds and year of the process
-    local creationdate=$(date -d "$(ps -p $pid -o lstart | tail -1 | awk '{print $1, $2, $3, $4}')" +"%b %d %H:%M")
+    #local creationdate=$(date -d "$(ps -p $pid -o lstart | tail -1 | awk '{print $1, $2, $3, $4}')" +"%b %d %H:%M")
+    local creationdate=$(ps -p $pid -o lstart= | awk '{print $2 " " $3 " " substr($4,1,length($4)-3)}')
+    
 
     #create a variable for the user of the process
     local user=$(ps -p $pid -o user | tail -1)
@@ -54,12 +60,36 @@ function get_pid_stats() {
     print
 }
 
-print(){
-    if [[ ($comm =~ $c) ]]; then
+function print(){
+
+    # #name filter
+    # if [[ "$(ps -p $pid -o comm=)" == $c ]]; then
+    #     printf "\n %-15s %-10s %+6s %+10s %+10s %+10s %+10s %+15s \n" "$comm" "$user" "$pid" "$readbytes" "$writebytes" "$readbps" "$writebps" "$creationdate"
+    # fi
+
+    #date filter
+    # echo $s "<->" $e
+    # if [[ $creationdate > $s && $creationdate < $e ]]; then
+    #     printf "\n %-15s %-10s %+6s %+10s %+10s %+10s %+10s %+15s \n" "$comm" "$user" "$pid" "$readbytes" "$writebytes" "$readbps" "$writebps" "$creationdate"
+    # fi
+
+    # echo $m "<" $pid "<" $M
+    # if [[ $pid > $m  && $pid < $M ]]; then
+    #     printf "\n %-15s %-10s %+6s %+10s %+10s %+10s %+10s %+15s \n" "$comm" "$user" "$pid" "$readbytes" "$writebytes" "$readbps" "$writebps" "$creationdate"
+    # fi
+
+    if [[ $p_start < $p ]]; then
         printf "\n %-15s %-10s %+6s %+10s %+10s %+10s %+10s %+15s \n" "$comm" "$user" "$pid" "$readbytes" "$writebytes" "$readbps" "$writebps" "$creationdate"
-    fi
+    else
+        exit 1
+    fi 
+    p_start=$((p_start+1))
+
 }
 
+# function process_data(){
+
+# }
 
 function get_input(){
     while getopts "c:s:e:u:m:M:p:rw" opt; do
@@ -68,37 +98,71 @@ function get_input(){
                 c="$OPTARG"
                 
                 # check if flag is used more than once
-                if [[ $c_uses == 1 ]]; then
+                if [[ $c_used == 1 ]]; then
                     echo "ERROR: -c flag already used"
                     exit 1
                 fi
 
-                c_uses=1
+                c_used=1
                 ;;
             s)
-                s="$OPTARG"
+                # s=$(date -d "$OPTARG" +"%b %d %H:%M")
+                s=$OPTARG
                 # check if flag is used more than once
-                if [[ $s_uses == 1 ]]; then
+                if [[ $s_used == 1 ]]; then
                     echo "ERROR: -s flag already used"
                     exit 1
                 fi
 
-                s_uses=1
+                s_used=1
                 ;;
             e)
                 e="$OPTARG"
-                if [[ $e_uses == 1 ]]; then
+                if [[ $e_used == 1 ]]; then
                     echo "ERROR: -e flag already used"
                     exit 1
                 fi
 
-                e_uses=1
+                e_used=1
                 ;;
-            # u)
+            u)
+                u="$OPTARG"
+                # check if flag is used more than once
+                if [[ $u_used == 1 ]]; then
+                    echo "ERROR: -u flag already used"
+                    exit 1
+                fi
+                # check if the user exists
+                if id "$u" &>/dev/null; then
+                    echo 'user found'              
+                    # filter by user
+                    # ps -u $u -o pid= | while read pid; do
+                    #     get_pid_stats $pid $s
+                    # done
+                    $u_used=1
+                else
+                    echo 'ERROR: user not found'
+                fi
+                ;;  
 
-            # m)
+            m)
+                m="$OPTARG"
+                # check if flag is used more than once
+                if [[ $m_uses == 1 ]]; then
+                    echo "ERROR: -m flag already used"
+                    exit 1
+                fi
+                m_used=1
+                ;;
 
-            # M)
+            M)
+                M="$OPTARG"
+                # check if flag is used more than once
+                if [[ $M_used == 1 ]]; then
+                    echo "ERROR: -M flag already used"
+                    exit 1
+                fi
+                ;;
 
             p)
                 p=$OPTARG
@@ -108,12 +172,12 @@ function get_input(){
                     exit 1
                 fi
                 # check if flag is used more than onc
-                if [[ $p_uses == 1 ]]; then
+                if [[ $p_used == 1 ]]; then
                     echo "ERROR: -p flag already used"
                     exit 1
                 fi
 
-                p_uses=1
+                p_used=1
                 ;;
             r)
                 # check if flag is used more than once
