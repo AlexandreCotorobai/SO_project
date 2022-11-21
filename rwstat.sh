@@ -14,6 +14,7 @@ declare c="*"
 # s=$(ps -p 1 -o lstart= | awk '{print $2 " " $3 " " substr($4,1,length($4)-3)}')
 s=0
 e=$(date +"%b %d %H:%M")
+p_start=0
 
 
 # This is a function that will write to the terminal the readbytes and writebytes of a process
@@ -57,7 +58,10 @@ function get_pid_stats() {
 
     #print a table with the process comm, user, pid, readbytes, writebytes, readbps, writebps, creationdate
     # printf "\n %-15s %-10s %+6s %+10s %+10s %+10s %+10s %+15s \n" "$comm" "$user" "$pid" "$readbytes" "$writebytes" "$readbps" "$writebps" "$creationdate"
-    print
+    if [[ reverse -eq 1 ]]; then
+        echo "entrou"
+        print | sort -k4 -n -r
+    fi
 }
 
 function print(){
@@ -78,13 +82,14 @@ function print(){
     #     printf "\n %-15s %-10s %+6s %+10s %+10s %+10s %+10s %+15s \n" "$comm" "$user" "$pid" "$readbytes" "$writebytes" "$readbps" "$writebps" "$creationdate"
     # fi
 
-    if [[ $p_start < $p ]]; then
-        printf "\n %-15s %-10s %+6s %+10s %+10s %+10s %+10s %+15s \n" "$comm" "$user" "$pid" "$readbytes" "$writebytes" "$readbps" "$writebps" "$creationdate"
-    else
-        exit 1
-    fi 
-    p_start=$((p_start+1))
-
+    # if [[ $p_start -lt $p ]]; then
+    #     printf "\n %-15s %-10s %+6s %+10s %+10s %+10s %+10s %+15s \n" "$comm" "$user" "$pid" "$readbytes" "$writebytes" "$readbps" "$writebps" "$creationdate"
+    # else
+    #     exit 1
+    # fi 
+    # p_start=$((p_start+1))
+    
+    printf "\n %-15s %-10s %+6s %+10s %+10s %+10s %+10s %+15s \n" "$comm" "$user" "$pid" "$readbytes" "$writebytes" "$readbps" "$writebps" "$creationdate"
 }
 
 # function process_data(){
