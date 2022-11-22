@@ -14,6 +14,7 @@ declare c="*"
 # s=$(ps -p 1 -o lstart= | awk '{print $2 " " $3 " " substr($4,1,length($4)-3)}')
 s=0
 e=$(date +"%b %d %H:%M")
+M=9999999999999999999999
 p_start=0
 
 
@@ -58,18 +59,67 @@ function get_pid_stats() {
 
     #print a table with the process comm, user, pid, readbytes, writebytes, readbps, writebps, creationdate
     # printf "\n %-15s %-10s %+6s %+10s %+10s %+10s %+10s %+15s \n" "$comm" "$user" "$pid" "$readbytes" "$writebytes" "$readbps" "$writebps" "$creationdate"
-    if [[ reverse -eq 1 ]]; then
-        echo "entrou"
-        print | sort -k4 -n -r
-    fi
+    # if [[ reverse -eq 1 ]]; then
+    #     echo "entrou"
+    #     print | sort -k4 -n -r
+    # fi
+    # echo "entrou input"
+    filter
 }
 
-function print(){
+function print() {
+    printf "\n %-15s %-10s %+6s %+10s %+10s %+10s %+10s %+15s \n" "$comm" "$user" "$pid" "$readbytes" "$writebytes" "$readbps" "$writebps" "$creationdate"
+}
 
+function filter() {
+    echo "Verificando... " $comm $creationdate
+    if [[ $c_used -eq 1 ]]; then
+        if [[ "$(ps -p $pid -o comm=)" != $c ]]; then
+            return
+        fi
+    fi
+    if [[ $s_used -eq 1 ]]; then
+        if [[ $creationdate < $s ]]; then
+            return
+        fi
+    fi
+    if [[ $e_used -eq 1 ]]; then
+        if [[ $creationdate > $e ]]; then
+            return
+        fi
+    fi
+    if [[ $u_used -eq 1 ]]; then
+        if [[ $user != $u ]]; then
+        # echo "User diferente"
+            return
+        # else
+        #     echo "User igual"
+        fi
+        
+    fi
+    if [[ $m_used -eq 1 ]]; then
+        if [[ $pid < $m ]]; then
+            return
+        fi
+    fi
+    if [[ $M_used -eq 1 ]]; then
+        if [[ $pid > $M ]]; then
+            return
+        fi
+    fi
+    print
+}
     # #name filter
     # if [[ "$(ps -p $pid -o comm=)" == $c ]]; then
     #     printf "\n %-15s %-10s %+6s %+10s %+10s %+10s %+10s %+15s \n" "$comm" "$user" "$pid" "$readbytes" "$writebytes" "$readbps" "$writebps" "$creationdate"
     # fi
+
+    # if [[ $p_start -lt $p ]]; then
+    #     printf "\n %-15s %-10s %+6s %+10s %+10s %+10s %+10s %+15s \n" "$comm" "$user" "$pid" "$readbytes" "$writebytes" "$readbps" "$writebps" "$creationdate"
+    # else
+    #     exit 1
+    # fi 
+    # p_start=$((p_start+1))
 
     #date filter
     # echo $s "<->" $e
@@ -82,15 +132,10 @@ function print(){
     #     printf "\n %-15s %-10s %+6s %+10s %+10s %+10s %+10s %+15s \n" "$comm" "$user" "$pid" "$readbytes" "$writebytes" "$readbps" "$writebps" "$creationdate"
     # fi
 
-    # if [[ $p_start -lt $p ]]; then
-    #     printf "\n %-15s %-10s %+6s %+10s %+10s %+10s %+10s %+15s \n" "$comm" "$user" "$pid" "$readbytes" "$writebytes" "$readbps" "$writebps" "$creationdate"
-    # else
-    #     exit 1
-    # fi 
-    # p_start=$((p_start+1))
     
-    printf "\n %-15s %-10s %+6s %+10s %+10s %+10s %+10s %+15s \n" "$comm" "$user" "$pid" "$readbytes" "$writebytes" "$readbps" "$writebps" "$creationdate"
-}
+    
+    # printf "\n %-15s %-10s %+6s %+10s %+10s %+10s %+10s %+15s \n" "$comm" "$user" "$pid" "$readbytes" "$writebytes" "$readbps" "$writebps" "$creationdate"
+
 
 # function process_data(){
 
@@ -138,16 +183,17 @@ function get_input(){
                     exit 1
                 fi
                 # check if the user exists
-                if id "$u" &>/dev/null; then
-                    echo 'user found'              
-                    # filter by user
-                    # ps -u $u -o pid= | while read pid; do
-                    #     get_pid_stats $pid $s
-                    # done
-                    $u_used=1
-                else
-                    echo 'ERROR: user not found'
-                fi
+                # if id "$u" &>/dev/null; then
+                #     echo 'user found'              
+                #     # filter by user
+                #     # ps -u $u -o pid= | while read pid; do
+                #     #     get_pid_stats $pid $s
+                #     # done
+                #     $u_used=1
+                # else
+                #     echo 'ERROR: user not found'
+                # fi
+                u_used=1
                 ;;  
 
             m)
@@ -167,6 +213,7 @@ function get_input(){
                     echo "ERROR: -M flag already used"
                     exit 1
                 fi
+                M_used=1
                 ;;
 
             p)
