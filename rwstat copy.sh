@@ -8,93 +8,74 @@ declare M_used=0
 declare p_used=0
 declare reverse=0
 declare sortw=0
-declare i=0
-declare -a allSavedPids
-declare -A saveReadBytes
-declare -A saveWriteBytes
-declare p=-1
-
 
 # default values
 declare c="*"
 # s=$(ps -p 1 -o lstart= | awk '{print $2 " " $3 " " substr($4,1,length($4)-3)}')
 s=0
 e=$(date +"%b %d %H:%M")
-M=9999999999999999999999
 p_start=0
 
 
 # This is a function that will write to the terminal the readbytes and writebytes of a process
 
 function get_pid_stats() {
-    local sleeptime=$1
-    # echo $sleeptime
-    for pid in $(ps -eo pid= | tail -n +2); do
-        if [ -r /proc/$pid/io ] && [ -r /proc/$pid/status ] && [ -r /proc/$pid/comm ]; then
-            local readbytes=$(grep -E 'rchar' /proc/$pid/io | awk '{print $2}')
-            saveReadBytes[$pid]=$readbytes
+    local pid=$1
 
-            local writebytes=$(grep -E 'wchar' -w /proc/$pid/io | awk '{print $2}')
-            saveWriteBytes[$pid]=$writebytes
-        fi
-    done
+    local sleeptime=$2
+    # echo "sleeptime:" $sleeptime
 
+    # get the readbytes and writebytes of the process
+    local readbytes=$(grep -E 'read_bytes' /proc/$pid/io | awk '{print $2}')
+
+    local writebytes=$(grep -E 'write_bytes' -w /proc/$pid/io | awk '{print $2}')
+
+    #sleep for sleeptime
     sleep $sleeptime
 
-    for pid in $(ps -eo pid= | tail -n +2); do
-        if [ -r /proc/$pid/io ] && [ -r /proc/$pid/status ] && [ -r /proc/$pid/comm ]; then
-            local readbytes1=$(grep -E 'rchar' /proc/$pid/io | awk '{print $2}')
+    # get the read and write bytes stats again
+    local readbytes2=$(grep -E 'read_bytes' /proc/$pid/io | awk '{print $2}')
 
-            declare readbytes2=$(($readbytes1 - ${saveReadBytes[$pid]}))
+    local writebytes2=$(grep -E 'write_bytes' -w /proc/$pid/io | awk '{print $2}')
 
-            # echo "sub " $readbytes1 ${saveReadBytes[$pid]}
-            # echo "res " $readbytes2
+    # calculate the read bytes per second and write bytes per second
 
-            declare readbps=$((($readbytes2) / $sleeptime))
+    local readbps=$((($readbytes2 - $readbytes) / $sleeptime))
 
-            local writebytes1=$(grep -E 'wchar' -w /proc/$pid/io | awk '{print $2}')
+    local writebps=$((($writebytes2 - $writebytes) / $sleeptime))
 
-            declare writebytes2=$(($writebytes1 - ${saveWriteBytes[$pid]}))
+    #create a variable for the /proc/[pid]/comm file
+    comm=$(cat /proc/$pid/comm)
+    # echo $c "<->" $comm
 
-            declare writebps=$((($readbytes2) / $sleeptime))
+    #create a variable for the creation date and time without the seconds and year of the process
+    #local creationdate=$(date -d "$(ps -p $pid -o lstart | tail -1 | awk '{print $1, $2, $3, $4}')" +"%b %d %H:%M")
+    local creationdate=$(ps -p $pid -o lstart= | awk '{print $2 " " $3 " " substr($4,1,length($4)-3)}')
+    
 
-            declare comm=$(cat /proc/$pid/comm)
-            # echo $c "<->" $comm
+    #create a variable for the user of the process
+    local user=$(ps -p $pid -o user | tail -1)
 
-            declare creationdate=$(ps -p $pid -o lstart= | awk '{print $2 " " $3 " " substr($4,1,length($4)-3)}')
-            
-            declare user=$(ps -p $pid -o user | tail -1)
-
-            filter
-
-        fi
-    done
+    #print a table with the process comm, user, pid, readbytes, writebytes, readbps, writebps, creationdate
+    # printf "\n %-15s %-10s %+6s %+10s %+10s %+10s %+10s %+15s \n" "$comm" "$user" "$pid" "$readbytes" "$writebytes" "$readbps" "$writebps" "$creationdate"
+    # if [[ reverse -eq 1 ]]; then
+    #     echo "entrou"
+    #     print | sort -k4 -n -r
+    # fi
+    # echo "entrou input"
+    filter
 }
-
-# function print() {
-#     printf "\n %-15s %-10s %+6s %+10s %+10s %+10s %+10s %+15s \n" "$comm" "$user" "$pid" "$readbytes" "$writebytes" "$readbps" "$writebps" "$creationdate"
-# }
 
 function print() {
-    if [[ $sortw -eq 1 ]]; then
-        if [[ $reverse -eq 1 ]]; then
-            printf '%s \n' "${allSavedPids[@]}" | sort -k7 -n | head -n $p
-        else
-            printf '%s \n' "${allSavedPids[@]}" | sort -r -k7 -n | head -n $p
-        fi
-    else
-        if [[ $reverse -eq 1 ]]; then
-            printf '%s \n' "${allSavedPids[@]}" | sort -k6 -n | head -n $p
-        else
-            printf '%s \n' "${allSavedPids[@]}" | sort -r -k6 -n | head -n $p
-        fi
-    fi
 
+    if [[ reverse -eq 1 ]]; then
+
+    
+    printf "\n %-15s %-10s %+6s %+10s %+10s %+10s %+10s %+15s \n" "$comm" "$user" "$pid" "$readbytes" "$writebytes" "$readbps" "$writebps" "$creationdate"
 }
 
-
 function filter() {
-    # echo "Verificando... " $comm $creationdate
+    echo "Verificando... " $comm $creationdate
     if [[ $c_used -eq 1 ]]; then
         if [[ "$(ps -p $pid -o comm=)" != $c ]]; then
             return
@@ -129,11 +110,39 @@ function filter() {
             return
         fi
     fi
-
-    allSavedPids[$i]=$(printf "%-20s %-10s %+6s %+10s %+10s %+10s %+10s %+15s" "$comm" "$user" "$pid" "$readbytes2" "$writebytes2" "$readbps" "$writebps" "$creationdate")
-    i=$((i+1))
+    print
 }
+    # #name filter
+    # if [[ "$(ps -p $pid -o comm=)" == $c ]]; then
+    #     printf "\n %-15s %-10s %+6s %+10s %+10s %+10s %+10s %+15s \n" "$comm" "$user" "$pid" "$readbytes" "$writebytes" "$readbps" "$writebps" "$creationdate"
+    # fi
 
+    # if [[ $p_start -lt $p ]]; then
+    #     printf "\n %-15s %-10s %+6s %+10s %+10s %+10s %+10s %+15s \n" "$comm" "$user" "$pid" "$readbytes" "$writebytes" "$readbps" "$writebps" "$creationdate"
+    # else
+    #     exit 1
+    # fi 
+    # p_start=$((p_start+1))
+
+    #date filter
+    # echo $s "<->" $e
+    # if [[ $creationdate > $s && $creationdate < $e ]]; then
+    #     printf "\n %-15s %-10s %+6s %+10s %+10s %+10s %+10s %+15s \n" "$comm" "$user" "$pid" "$readbytes" "$writebytes" "$readbps" "$writebps" "$creationdate"
+    # fi
+
+    # echo $m "<" $pid "<" $M
+    # if [[ $pid > $m  && $pid < $M ]]; then
+    #     printf "\n %-15s %-10s %+6s %+10s %+10s %+10s %+10s %+15s \n" "$comm" "$user" "$pid" "$readbytes" "$writebytes" "$readbps" "$writebps" "$creationdate"
+    # fi
+
+    
+    
+    # printf "\n %-15s %-10s %+6s %+10s %+10s %+10s %+10s %+15s \n" "$comm" "$user" "$pid" "$readbytes" "$writebytes" "$readbps" "$writebps" "$creationdate"
+
+
+# function process_data(){
+
+# }
 
 function get_input(){
     while getopts "c:s:e:u:m:M:p:rw" opt; do
@@ -258,28 +267,15 @@ function get_input(){
 
 function main(){
     get_input "$@"
-    count=0
-    printf "\n%-20s %-10s %+6s %+10s %+10s %+10s %+10s %+15s \n" "COMM" "USER" "PID" "READB" "WRITEB" "RATER" "RATEW" "DATE"
-    # for pid in $(ps -eo pid=); do
-    #     get_pid_stats $pid $s
-    # done
-    # ps -u $USER -o pid= | while read pid; do
 
-        # #----------------------------------------------------
-        # if [[ $count -gt 5 ]]; then
-        #     break
-        # fi
-        # count=$((count+1))
-        # #----------------------------------------------------
-
-        # if the user has permission to read the /proc/[pid]/io file
-        # if [ -r /proc/$pid/io ] && [ -r /proc/$pid/status ] && [ -r /proc/$pid/comm ]; then
+    printf "\n %-15s %-10s %+6s %+10s %+10s %+10s %+10s %+15s \n" "COMM" "USER" "PID" "READB" "WRITEB" "RATER" "RATEW" "DATE"
+    ps -u $USER -o pid= | while read pid; do
+    # if the user has permission to read the /proc/[pid]/io file
+        if [ -r /proc/$pid/io ] && [ -r /proc/$pid/status ] && [ -r /proc/$pid/comm ]; then
         # DUVIDA: necessario verificar status e comm?
-    get_pid_stats "${@: -1}"
-        # fi
-    # done
-
-    print
+            get_pid_stats $pid "${@: -1}"
+        fi
+    done
 }
 
 main "$@"
