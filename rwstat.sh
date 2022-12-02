@@ -19,6 +19,22 @@ declare argCount=0         # Variável que conta o número de flags e o numero d
 
 
 
+function menu() {
+    echo "-------------------------------------------------------------------------------------------------------"
+    echo "Modo de utilização: ./rwstat.sh [opções] [sleeptime]"
+    echo "Opções válidas:"
+    echo "    -c          : Seleção de processos a utilizar através de uma expressão regular"
+    echo "    -u          : Seleção de processos a visualizar através do nome do utilizador"
+    echo "    -s          : Seleção de processos a visualizar num periodo temporal - data mínima (Mes d hh:mm)"
+    echo "    -e          : Seleção de processos a visualizar num periodo temporal - data máxima (Mes d hh:mm)"
+    echo "    -m          : Seleção de processos a visualizar num número mínimo de pid"
+    echo "    -M          : Seleção de processos a visualizar num número máximo de pid"
+    echo "    -p          : Número de processos a visualizar"
+    echo "    -r          : Ordenação da tabela por ordem reversa"
+    echo "    -w          : Ordenação da tabela pOR RATEW"
+    echo "Último argumento: O último argumento passado tem de ser um número"
+    echo "-------------------------------------------------------------------------------------------------------"
+}
 
 function get_pid_stats() {
     local sleeptime=$1
@@ -36,10 +52,10 @@ function get_pid_stats() {
     sleep $sleeptime    # tempo de espera entre uma leitura e outra para que seja possivel calcular a diferença
     
 
-    for pid in $(ps -eo pid= | tail -n +2); do                                              # percorre novamente todos os processos
-        if [ -r /proc/$pid/io ] && [ -r /proc/$pid/status ] && [ -r /proc/$pid/comm ]; then # verifica as permisoes de read de cada processo
-            if [[ ! ${!saveReadBytes[@]} =~ "${pid}" ]]; then                               # verifica se o pid do processo está no dicionario, evita que 
-                continue  
+    for pid in $(ps -eo pid= | tail -n +2); do                                                  # percorre novamente todos os processos
+        if [ -r /proc/$pid/io ] && [ -r /proc/$pid/status ] && [ -r /proc/$pid/comm ]; then     # verifica as permisoes de read de cada processo
+            if [[ ! ${!saveReadBytes[@]} =~ "${pid}" ]]; then                               # verifica se o pid do processo está no dicionario, ..
+                continue                                                                    # .. evita crashes caso um novo processo seja criado durante o sleeptime
             fi
             local readbytes1=$(grep -E 'rchar' /proc/$pid/io | awk '{print $2}')
 
@@ -68,7 +84,7 @@ function get_pid_stats() {
 
 function print() {
     if [ ${#allSavedPids[@]} -eq 0 ]; then                                      # verifica se o array allSavedPids está vazio (ou seja, se não existem processos que satisfazem os critérios)
-        printf "No processes found matching your search\n"
+        printf "No process found matching your search\n"
     fi
     if [[ $sortw -eq 1 ]]; then                                                 # verifica se a flag -w foi usada
         if [[ $reverse -eq 1 ]]; then                                           # verifica se a flag -r foi usada
@@ -140,6 +156,7 @@ function get_input(){
                 # check if flag is used more than once
                 if [[ $c_used == 1 ]]; then
                     echo "ERROR: -c flag already used"
+                    menu
                     exit 1
                 fi
 
@@ -151,14 +168,17 @@ function get_input(){
                 # check if flag is used more than once
                 if [[ $s_used == 1 ]]; then
                     echo "ERROR: -s flag already used"
+                    menu
                     exit 1
                 fi
 
                 # valida o formato do argumento passado como data
-                if [[ $s =~ ^[A-Za-z]{3}\ [0-9]{1,2}\ [0-9]{1,2}:[0-9]{2}$ && "${validadeMonths[*]}" =~ "${s:0:3}" ]]; then
+                local mes=${s:0:3}
+                if [[ $s =~ ^[A-Za-z]{3}\ [0-9]{1,2}\ [0-9]{1,2}:[0-9]{2}$ && "${validadeMonths[*]}" =~ "${mes^}" ]]; then
                     s_used=1
                 else
                     echo "ERROR: Invalid date format"
+                    menu
                     exit 1
                 fi
                 
@@ -170,14 +190,17 @@ function get_input(){
                 e="$OPTARG"
                 if [[ $e_used == 1 ]]; then
                     echo "ERROR: -e flag already used"
+                    menu
                     exit 1
                 fi
 
                 # valida o formato do argumento passado como data
-                if [[ $s =~ ^[A-Za-z]{3}\ [0-9]{1,2}\ [0-9]{1,2}:[0-9]{2}$ && "${validadeMonths[*]}" =~ "${s:0:3}" ]]; then
+                local mes=${s:0:3}
+                if [[ $s =~ ^[A-Za-z]{3}\ [0-9]{1,2}\ [0-9]{1,2}:[0-9]{2}$ && "${validadeMonths[*]}" =~ "${mes^}" ]]; then
                     s_used=1
                 else
                     echo "ERROR: Invalid date format"
+                    menu
                     exit 1
                 fi
                 argCount=$(($argCount+2))
@@ -189,11 +212,13 @@ function get_input(){
                 # check if flag is used more than once
                 if [[ $u_used == 1 ]]; then
                     echo "ERROR: -u flag already used"
+                    menu
                     exit 1
                 fi
                 # verifica se o utilizador passado como argumento existe
                 if ! id "$u" &>/dev/null; then
-                    echo 'ERROR: User not found'              
+                    echo 'ERROR: User not found'
+                    menu              
                     exit 1
                 fi
                 argCount=$(($argCount+2))
@@ -205,11 +230,13 @@ function get_input(){
                 # check if flag is used more than once
                 if [[ $m_used == 1 ]]; then
                     echo "ERROR: -m flag already used"
+                    menu
                     exit 1
                 fi
                 # verifica se o argumento passado é um número
                 if ! [[ $m =~ ^[0-9]+$ ]]; then
                     echo "ERROR: -m flag must be an integer"
+                    menu
                     exit 1
                 fi
                 argCount=$(($argCount+2))
@@ -222,11 +249,13 @@ function get_input(){
                 # check if flag is used more than once
                 if [[ $M_used == 1 ]]; then
                     echo "ERROR: -M flag already used"
+                    menu
                     exit 1
                 fi
                 # verifica se o argumento passado é um número
                 if ! [[ $M =~ ^[0-9]+$ ]]; then
                     echo "ERROR: -M flag must be an integer"
+                    menu
                     exit 1
                 fi
                 argCount=$(($argCount+2))
@@ -239,11 +268,13 @@ function get_input(){
                 # verifica se o argumento passado é um número
                 if [[ ! "${p}" =~ ^[0-9]+$ ]]; then
                     echo "ERROR: -p flag must be followed by an integer"
+                    menu
                     exit 1
                 fi
                 # check if flag is used more than once
                 if [[ $p_used == 1 ]]; then
                     echo "ERROR: -p flag already used"
+                    menu
                     exit 1
                 fi
                 argCount=$(($argCount+2))
@@ -253,6 +284,7 @@ function get_input(){
                 # check if flag is used more than once
                 if [[ $reverse == 1 ]]; then
                     echo "ERROR: -r flag already used"
+                    menu
                     exit 1
                 else 
                     reverse=1
@@ -264,6 +296,7 @@ function get_input(){
                 # check if flag is used more than once
                 if [[ $sortw == 1 ]]; then
                     echo "ERROR: -w flag already used"
+                    menu
                     exit 1
                 else 
                     sortw=1
