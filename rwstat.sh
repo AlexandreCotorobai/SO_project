@@ -34,9 +34,13 @@ function get_pid_stats() {
     done
 
     sleep $sleeptime    # tempo de espera entre uma leitura e outra para que seja possivel calcular a diferença
+    
 
     for pid in $(ps -eo pid= | tail -n +2); do                                              # percorre novamente todos os processos
         if [ -r /proc/$pid/io ] && [ -r /proc/$pid/status ] && [ -r /proc/$pid/comm ]; then # verifica as permisoes de read de cada processo
+            if [[ ! ${!saveReadBytes[@]} =~ "${pid}" ]]; then                               # verifica se o pid do processo está no dicionario, evita que 
+                continue  
+            fi
             local readbytes1=$(grep -E 'rchar' /proc/$pid/io | awk '{print $2}')
 
             declare readbytes2=$(($readbytes1 - ${saveReadBytes[$pid]}))                # calcula a diferença entre o readbytes atual e o readbytes inicial
