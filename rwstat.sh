@@ -181,9 +181,7 @@ function get_input(){
                     menu
                     exit 1
                 fi
-                
                 argCount=$(($argCount+2))
-
                 s_used=1
                 ;;
             e)
@@ -204,7 +202,6 @@ function get_input(){
                     exit 1
                 fi
                 argCount=$(($argCount+2))
-
                 e_used=1
                 ;;
             u)
